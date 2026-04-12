@@ -20,13 +20,13 @@ endif()
 
 # Set the project name
 set(CMAKE_PROJECT_NAME app)
-set(FREERTOS_PORT GCC_ARM_CM7 CACHE STRING "")
 
-
+set(FREERTOS_PORT GCC_ARM_CM7)
+set(FREERTOS_HEAP 4)
 add_library(freertos_config INTERFACE)
 target_include_directories(freertos_config SYSTEM
             INTERFACE
-            Middlewares/Third_Party/FreeRTOS/Source/include/config)
+            Core/Inc)
 target_compile_definitions(freertos_config
             INTERFACE
             projCOVERAGE_TEST=0)            
@@ -71,14 +71,11 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
 )
+target_link_libraries(freertos_kernel_include INTERFACE
+                        stm32cubemx)
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-
     # Add user defined libraries
-)
-add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.hex
-    COMMENT "Generating HEX file"
 )

@@ -46,6 +46,21 @@
 /******************************************************************************/
 /* Hardware description related definitions. **********************************/
 /******************************************************************************/
+#include "stm32h7xx.h"
+#include <stdint.h>
+extern uint32_t SystemCoreClock;
+
+
+#define configUSE_16_BIT_TICKS                   TICK_TYPE_WIDTH_16_BITS
+
+
+
+
+
+
+
+
+
 
 /* In most cases, configCPU_CLOCK_HZ must be set to the frequency of the clock
  * that drives the peripheral used to generate the kernels periodic tick
@@ -53,7 +68,7 @@
  * settings.  Your application will certainly need a different value so set this
  * correctly. This is very often, but not always, equal to the main system clock
  * frequency. */
-#define configCPU_CLOCK_HZ    ( ( unsigned long ) 20000000 )
+#define configCPU_CLOCK_HZ    ( SystemCoreClock )
 
 /* configSYSTICK_CLOCK_HZ is an optional parameter for ARM Cortex-M ports only.
  *
@@ -77,7 +92,7 @@
 
 /* configTICK_RATE_HZ sets frequency of the tick interrupt in Hz, normally
  * calculated from the configCPU_CLOCK_HZ value. */
-#define configTICK_RATE_HZ                         100
+#define configTICK_RATE_HZ                         ((TickType_t)1000)
 
 /* Set configUSE_PREEMPTION to 1 to use pre-emptive scheduling.  Set
  * configUSE_PREEMPTION to 0 to use co-operative scheduling.
@@ -136,7 +151,7 @@
  *
  * Defining configTICK_TYPE_WIDTH_IN_BITS as TICK_TYPE_WIDTH_64_BITS causes
  * TickType_t to be defined (typedef'ed) as an unsigned 64-bit type. */
-#define configTICK_TYPE_WIDTH_IN_BITS              TICK_TYPE_WIDTH_64_BITS
+// #define configTICK_TYPE_WIDTH_IN_BITS              TICK_TYPE_WIDTH_64_BITS
 
 /* Set configIDLE_SHOULD_YIELD to 1 to have the Idle task yield to an
  * application task if there is an Idle priority (priority 0) application task

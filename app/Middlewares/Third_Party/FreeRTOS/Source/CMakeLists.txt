@@ -271,10 +271,10 @@ endif()
 
 target_link_libraries(freertos_kernel
     PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/freertos_kernel_include
-        ${CMAKE_CURRENT_LIST_DIR}/freertos_kernel_port_headers
+        freertos_kernel_include
+        freertos_kernel_port_headers
     PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}/freertos_kernel_port
+        freertos_kernel_port
 
 )
 
