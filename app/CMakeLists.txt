@@ -23,6 +23,7 @@ set(CMAKE_PROJECT_NAME app)
 
 set(FREERTOS_PORT GCC_ARM_CM7)
 set(FREERTOS_HEAP 4)
+# set(FREERTOS_CONFIG_FILE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc)
 add_library(freertos_config INTERFACE)
 target_include_directories(freertos_config SYSTEM
             INTERFACE
@@ -41,7 +42,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -u _printf_float")
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
 
-add_subdirectory(Middlewares/Third_Party/FreeRTOS/Source)
+add_subdirectory(Middlewares/Third_Party/FreeRTOS/FreeRTOS-Kernel)
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
@@ -54,7 +55,7 @@ add_subdirectory(cmake/stm32cubemx)
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
+    # Add user defined library search pathsFREERTOS_CONFIG_FILE_DIRECTORY
 )
 
 # Add sources to executable
@@ -77,5 +78,6 @@ target_link_libraries(freertos_kernel_include INTERFACE
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
+    freertos_kernel
     # Add user defined libraries
 )

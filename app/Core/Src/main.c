@@ -26,7 +26,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "FreeRTOS.h"
+#include "task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,7 +60,15 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void task1(void *parameter)
+{
+    for (;;)
+    {
+        USART1->TDR = '1';
+        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        vTaskDelay(100);
+    }
+}
 /* USER CODE END 0 */
 
 /**
@@ -98,18 +107,8 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
-  HAL_Delay(100);
-  HAL_ADC_Start(&hadc1);
-  uint16_t ADC_Value_start = 0;
-  for(int i = 0; i < 10; i++) { 
-      HAL_ADC_Start(&hadc1);
-      if(HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK) {
-          ADC_Value_start = HAL_ADC_GetValue(&hadc1);
-          printf("Discarding %d: %d\r\n", i+1, ADC_Value_start);
-      }
-      HAL_Delay(1);
-  }
+  xTaskCreate(&task1,"task1",128,NULL,3,NULL);
+  vTaskStartScheduler();
 
   /* USER CODE END 2 */
 
@@ -117,16 +116,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_ADC_Start(&hadc1);
-    if(HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
-    {
-        uint16_t raw_value = HAL_ADC_GetValue(&hadc1);
-        uint16_t corrected_value = raw_value - ADC_Value_start;
-        float voltage = corrected_value / 4096.0f * 3.3f;
-        // printf("%d %d %d \n",raw_value,ADC_Value_start,corrected_value);
-        printf("%f \r\n",voltage*63.1+5.9739);
-      }
-      HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
