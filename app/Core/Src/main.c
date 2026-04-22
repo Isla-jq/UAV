@@ -60,13 +60,34 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void task1(void *parameter)
+void vtask1(void *parameter)
 {
     for (;;)
     {
         USART1->TDR = '1';
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
         vTaskDelay(100);
+    }
+}
+void vTimermanagerTask(void *parameter)
+{
+    for (;;)
+    {
+      vTaskDelay(1);
+    }
+}
+void vCLITask(void *parameter)
+{
+    for (;;)
+    {
+      vTaskDelay(1);
+    }
+}
+void vUARTUnpackTask(void *parameter)
+{
+    for (;;)
+    {
+      vTaskDelay(1);
     }
 }
 /* USER CODE END 0 */
@@ -107,7 +128,11 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  xTaskCreate(&task1,"task1",128,NULL,3,NULL);
+  xTaskCreate(&vtask1,"task1",128,NULL,1,NULL);
+  xTaskCreate(&vTimermanagerTask,"TMR",128,NULL,3,NULL);
+  xTaskCreate(&vCLITask,"UART",512,NULL,2,NULL);
+  xTaskCreate(&vUARTUnpackTask,"UART",256,NULL,4,NULL);
+
   vTaskStartScheduler();
 
   /* USER CODE END 2 */

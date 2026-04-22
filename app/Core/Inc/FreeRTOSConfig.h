@@ -110,7 +110,7 @@ extern uint32_t SystemCoreClock;
 #define INCLUDE_xTaskResumeFromISR              1
 
 /* A header file that defines trace macro can be included here. */
-#define vPortSVCHandler    SVC_Handler
-#define xPortPendSVHandler PendSV_Handler
+// #define vPortSVCHandler    SVC_Handler
+// #define xPortPendSVHandler PendSV_Handler
 // #define xPortSysTickHandler SysTick_Handler
 #endif /* FREERTOS_CONFIG_H */

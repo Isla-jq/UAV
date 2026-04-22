@@ -43,6 +43,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -u _printf_float")
 enable_language(C ASM)
 
 add_subdirectory(Middlewares/Third_Party/FreeRTOS/FreeRTOS-Kernel)
+add_subdirectory(bsp)
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
@@ -79,5 +80,6 @@ target_link_libraries(freertos_kernel_include INTERFACE
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
     freertos_kernel
+    bsp_lib
     # Add user defined libraries
 )
