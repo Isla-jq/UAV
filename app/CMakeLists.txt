@@ -26,7 +26,7 @@ set(FREERTOS_HEAP 4)
 add_library(freertos_config INTERFACE)
 target_include_directories(freertos_config SYSTEM
     INTERFACE
-    Core/Inc)
+    Core/Inc/config)
 target_compile_definitions(freertos_config
     INTERFACE
     projCOVERAGE_TEST=0)
@@ -73,6 +73,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
 )
+
 target_link_libraries(FreeRTOS_CLI PUBLIC
     freertos_kernel)
 
