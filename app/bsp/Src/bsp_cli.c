@@ -1,21 +1,26 @@
 #include "bsp_cli.h"
 #include "bsp_stream_buffer_interface.h"
 #include "main.h"
-
-
-static void LL_USART_SendString(USART_TypeDef *USARTx, uint8_t *str, int16_t len)
-{
-    for (int16_t i = 0; i < len; i++)
-    {
-        while (!LL_USART_IsActiveFlag_TXE(USARTx));
-        LL_USART_TransmitData8(USARTx, *str);
-        str++;
-    }
-}
+#include "usbd_cdc_if.h"
+#include "task.h"
+// static void LL_USART_SendString(USART_TypeDef *USARTx, uint8_t *str, int16_t len)
+// {
+//     for (int16_t i = 0; i < len; i++)
+//     {
+//         while (!LL_USART_IsActiveFlag_TXE(USARTx));
+//         LL_USART_TransmitData8(USARTx, *str);
+//         str++;
+//     }
+// }
 
 static void FreeRTOS_write(char *data, int16_t len)
 {
-    LL_USART_SendString(USART1, data, len);
+
+    while (CDC_Transmit_FS((uint8_t*)data, len) == USBD_BUSY) {
+        vTaskDelay(1);
+    }
+    // LL_USART_SendString(USART1, data, len);
+    // vTaskDelay(1);
 }
 
 #define MAX_INPUT_LENGTH 50

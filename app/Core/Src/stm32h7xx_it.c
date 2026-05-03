@@ -211,16 +211,16 @@ void SysTick_Handler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-  if (USART1->ISR & USART_ISR_RXNE_RXFNE) {
-    uint8_t ch = '\0';
-    ch = USART1->RDR;
-    StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();
-    if (stream_buffer != NULL)
-    { 
-      BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-      xStreamBufferSendFromISR(stream_buffer,&ch,1,xHigherPriorityTaskWoken);
-    }
-  }
+  // if (USART1->ISR & USART_ISR_RXNE_RXFNE) {
+  //   uint8_t ch = '\0';
+  //   ch = USART1->RDR;
+  //   StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();
+  //   if (stream_buffer != NULL)
+  //   { 
+  //     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  //     xStreamBufferSendFromISR(stream_buffer,&ch,1,xHigherPriorityTaskWoken);
+  //   }
+  // }
   /* USER CODE END USART1_IRQn 0 */
   /* USER CODE BEGIN USART1_IRQn 1 */
 

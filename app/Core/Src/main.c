@@ -69,16 +69,16 @@ void vtask1(void *parameter)
     StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();
     for (;;)
     { 
-      // uint8_t ch = 2;
-      // if (stream_buffer != NULL)
-      // {
-      //   xStreamBufferReceive(stream_buffer,&ch,1,portMAX_DELAY);
-      //   USART1 -> TDR = ch;
-      // }
-      // else {
-      //   taskYIELD();
-      // }
-      vTaskDelay(1000);
+      uint8_t ch = 2;
+      if (stream_buffer != NULL)
+      {
+        xStreamBufferReceive(stream_buffer,&ch,1,portMAX_DELAY);
+        USART1 -> TDR = ch;
+      }
+      else {
+        vTaskDelay(1);
+      }
+      vTaskDelay(1);
 
     }
 }
@@ -137,10 +137,10 @@ int main(void)
   /* USER CODE BEGIN 2 */
   bsp_stream_buffer_init();
   LL_USART_EnableIT_RXNE_RXFNE(USART1);
-  xTaskCreate(&vtask1,"task1",128,NULL,1,NULL);
+  // xTaskCreate(&vtask1,"task1",128,NULL,1,NULL);
   xTaskCreate(&vTimermanagerTask,"TMR",128,NULL,3,NULL);
   xTaskCreate(&vCLITask,"CLI",512,NULL,2,NULL);
-  xTaskCreate(&vUARTUnpackTask,"UART",256,NULL,4,NULL);
+  xTaskCreate(&vUARTUnpackTask,"UART",512,NULL,4,NULL);
 
   vTaskStartScheduler();
 
@@ -179,8 +179,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 5;
@@ -208,7 +209,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
   RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
-  
+
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();

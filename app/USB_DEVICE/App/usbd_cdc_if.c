@@ -22,7 +22,8 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "bsp_stream_buffer_interface.h"
+#include "stream_buffer.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -263,6 +264,9 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  xStreamBufferSendFromISR(stream_buffer,Buf,*Len,xHigherPriorityTaskWoken);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
