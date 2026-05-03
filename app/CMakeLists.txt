@@ -12,7 +12,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-
 # Define the build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -26,11 +25,11 @@ set(FREERTOS_HEAP 4)
 # set(FREERTOS_CONFIG_FILE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc)
 add_library(freertos_config INTERFACE)
 target_include_directories(freertos_config SYSTEM
-            INTERFACE
-            Core/Inc)
+    INTERFACE
+    Core/Inc)
 target_compile_definitions(freertos_config
-            INTERFACE
-            projCOVERAGE_TEST=0)            
+    INTERFACE
+    projCOVERAGE_TEST=0)
 
 # Include toolchain file
 include("cmake/gcc-arm-none-eabi.cmake")
@@ -44,6 +43,7 @@ enable_language(C ASM)
 
 add_subdirectory(Middlewares/Third_Party/FreeRTOS/FreeRTOS-Kernel)
 add_subdirectory(bsp)
+add_subdirectory(Middlewares/Third_Party/FreeRTOS/FreeRTOS-Plus/Source/FreeRTOS-Plus-CLI)
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
@@ -73,13 +73,16 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
 )
-target_link_libraries(freertos_kernel_include INTERFACE
-                        stm32cubemx)
+target_link_libraries(FreeRTOS_CLI PUBLIC
+    freertos_kernel)
+
+target_link_libraries(stm32cubemx INTERFACE
+    bsp_lib
+    FreeRTOS_CLI)
 
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-    freertos_kernel
-    bsp_lib
     # Add user defined libraries
+    freertos_kernel
 )

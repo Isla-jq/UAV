@@ -28,6 +28,10 @@
 /* USER CODE BEGIN Includes */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "stream_buffer.h"
+#include "bsp_stream_buffer_interface.h"
+#include "FreeRTOS_CLI.h"
+#include "bsp_cli.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,32 +66,36 @@ static void MPU_Config(void);
 /* USER CODE BEGIN 0 */
 void vtask1(void *parameter)
 {
+    StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();
     for (;;)
-    {
-        USART1->TDR = '1';
-        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        vTaskDelay(100);
+    { 
+      // uint8_t ch = 2;
+      // if (stream_buffer != NULL)
+      // {
+      //   xStreamBufferReceive(stream_buffer,&ch,1,portMAX_DELAY);
+      //   USART1 -> TDR = ch;
+      // }
+      // else {
+      //   taskYIELD();
+      // }
+      vTaskDelay(1000);
+
     }
 }
 void vTimermanagerTask(void *parameter)
 {
     for (;;)
     {
-      vTaskDelay(1);
+      // USART1 -> TDR =100;
+      vTaskDelay(1000);
     }
 }
-void vCLITask(void *parameter)
-{
-    for (;;)
-    {
-      vTaskDelay(1);
-    }
-}
+
 void vUARTUnpackTask(void *parameter)
 {
     for (;;)
     {
-      vTaskDelay(1);
+      vTaskDelay(100);
     }
 }
 /* USER CODE END 0 */
@@ -119,7 +127,6 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -128,9 +135,11 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
+  bsp_stream_buffer_init();
+  LL_USART_EnableIT_RXNE_RXFNE(USART1);
   xTaskCreate(&vtask1,"task1",128,NULL,1,NULL);
   xTaskCreate(&vTimermanagerTask,"TMR",128,NULL,3,NULL);
-  xTaskCreate(&vCLITask,"UART",512,NULL,2,NULL);
+  xTaskCreate(&vCLITask,"CLI",512,NULL,2,NULL);
   xTaskCreate(&vUARTUnpackTask,"UART",256,NULL,4,NULL);
 
   vTaskStartScheduler();
@@ -199,7 +208,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
   RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
-
+  
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();
