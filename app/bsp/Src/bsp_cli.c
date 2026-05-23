@@ -47,7 +47,7 @@ static BaseType_t prvDelCommand( char *pcWriteBuffer, size_t xWriteBufferLen, co
 static const CLI_Command_Definition_t xDelCommand =
 {
     "del",
-    "del <filename>: Deletes <filename> from the diskrn\n",
+    "del <filename>: This cmd is test. It is useless\n",
     prvDelCommand,
     1
 };
@@ -63,14 +63,14 @@ static BaseType_t prvSaveConfigCommand( char *pcWriteBuffer, size_t xWriteBuffer
                         &xParameterStringLength );
     bsp_saveconfig();
     snprintf( pcWriteBuffer, xWriteBufferLen,
-              "Saving config to file: %s\r\n", pcFileName );
+              "Saving config %s to Flash: %x \r\n", pcFileName,CONFIG_FLASH_ADDE);
     return pdFALSE;
 }
 
 static const CLI_Command_Definition_t xSaveConfigCommand =
 {
     "saveconfig",
-    "saveconfig: Saves the current configuration, such as \"liquid level reference\"\n",
+    "saveconfig: Saves the configuration, such as \"liquid level reference\"\n",
     prvSaveConfigCommand,
     1
 };

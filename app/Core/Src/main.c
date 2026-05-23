@@ -35,6 +35,7 @@
 #include "bsp_base_param.h"
 #include "stdio.h"
 #include "bsp_liquid_read.h"
+#include "bsp_event_group_interface.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -85,24 +86,38 @@ void vtask1(void *parameter)
     vTaskDelay(1);
   }
 }
-void vTimermanagerTask(void *parameter)
+void vSendSerialToNucTask(void *parameter)
 {
-  char str[20];
+  EventGroupHandle_t xEventGroup = bsp_get_event_group();
+  EventBits_t uxBits;
+  // char str[20];
   ConfigParam *Config = (ConfigParam *)(0x080E0000);
   uint16_t liquid_level_refference = Config->liquid_level_refference;
   uint8_t flag = Config->can_be_used;
   for (;;)
   {
-    if (flag == 1)
+    uxBits = xEventGroupWaitBits(xEventGroup, UART_SEND_LIQUID, pdTRUE, pdFALSE, portMAX_DELAY);
+    if ((uxBits & UART_SEND_LIQUID) != 0)
     {
-      sprintf(str, "LLR:%d\r\n", liquid_level_refference - get_liquid_value());
-      for (int i = 0; i <11; i++)
+      if (flag == 1)
       {
+        int16_t value = liquid_level_refference - get_liquid_value();
+        // snprintf(str, sizeof(str), "LLR:%d\r\n", value);
+        USART1->TDR = 0x55;
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        USART1->TDR = str[i];
+        USART1->TDR = 0x01;
+        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        USART1->TDR = value&0xff00;
+        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        USART1->TDR = value&0xff;
+        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        // for (int i = 0; i < 11; i++)
+        // {
+        //   while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        //   USART1->TDR = str[i];
+        // }
       }
     }
-    vTaskDelay(1000);
   }
 }
 
@@ -151,13 +166,14 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   bsp_stream_buffer_init();
+  bsp_event_group_init();
   LL_USART_EnableIT_RXNE_RXFNE(USART1);
   // xTaskCreate(&vtask1,"task1",128,NULL,1,NULL);
   bsp_base_param_init();
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
   HAL_Delay(100);
   HAL_ADC_Start(&hadc1);
-  xTaskCreate(&vTimermanagerTask, "TMR", 256, NULL, 2, NULL);
+  xTaskCreate(&vSendSerialToNucTask, "TMR", 256, NULL, 2, NULL);
   xTaskCreate(&vReadLiquidTask, "Liquid", 64, NULL, 2, NULL);
   xTaskCreate(&vCLITask, "CLI", 512, NULL, 3, NULL);
   xTaskCreate(&vUARTUnpackTask, "UART", 64, NULL, 4, NULL);
