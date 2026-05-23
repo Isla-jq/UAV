@@ -91,7 +91,7 @@ void vSendSerialToNucTask(void *parameter)
   EventGroupHandle_t xEventGroup = bsp_get_event_group();
   EventBits_t uxBits;
   // char str[20];
-  ConfigParam *Config = (ConfigParam *)(0x080E0000);
+  ConfigParam *Config = (ConfigParam *)(CONFIG_FLASH_ADDE);
   uint16_t liquid_level_refference = Config->liquid_level_refference;
   uint8_t flag = Config->can_be_used;
   for (;;)
@@ -107,9 +107,13 @@ void vSendSerialToNucTask(void *parameter)
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
         USART1->TDR = 0x01;
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        USART1->TDR = value&0xff00;
+        USART1->TDR = (value>>8) & 0xff;
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
         USART1->TDR = value&0xff;
+        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        USART1->TDR = '\r';
+        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        USART1->TDR = '\n';
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
         // for (int i = 0; i < 11; i++)
         // {
