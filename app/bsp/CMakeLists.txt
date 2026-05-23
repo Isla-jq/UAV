@@ -5,7 +5,9 @@ add_library(bsp_lib INTERFACE)
 target_sources(bsp_source
     INTERFACE
     Src/bsp_stream_buffer_interface.c
-    Src/bsp_cli.c)
+    Src/bsp_cli.c
+    Src/bsp_base_param.c
+    Src/bsp_liquid_read.c)
 
 target_include_directories(bsp_include
     INTERFACE

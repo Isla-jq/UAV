@@ -188,7 +188,6 @@ void DebugMon_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-  HAL_IncTick();
   xPortSysTickHandler();
 
   /* USER CODE END SysTick_IRQn 0 */
@@ -211,7 +210,18 @@ void SysTick_Handler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-  // if (USART1->ISR & USART_ISR_RXNE_RXFNE) {
+  if (LL_USART_IsActiveFlag_ORE(USART1) || 
+      LL_USART_IsActiveFlag_FE(USART1)  || 
+      LL_USART_IsActiveFlag_NE(USART1))
+  {
+    LL_USART_ClearFlag_ORE(USART1);
+    LL_USART_ClearFlag_FE(USART1);
+    LL_USART_ClearFlag_NE(USART1);
+  }
+  if (USART1->ISR & USART_ISR_RXNE_RXFNE) {
+    // Auto remove flag
+    USART1->RDR;
+  }
   //   uint8_t ch = '\0';
   //   ch = USART1->RDR;
   //   StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();

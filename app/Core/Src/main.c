@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2026 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -32,6 +32,9 @@
 #include "bsp_stream_buffer_interface.h"
 #include "FreeRTOS_CLI.h"
 #include "bsp_cli.h"
+#include "bsp_base_param.h"
+#include "stdio.h"
+#include "bsp_liquid_read.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,44 +69,56 @@ static void MPU_Config(void);
 /* USER CODE BEGIN 0 */
 void vtask1(void *parameter)
 {
-    StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();
-    for (;;)
-    { 
-      uint8_t ch = 2;
-      if (stream_buffer != NULL)
-      {
-        xStreamBufferReceive(stream_buffer,&ch,1,portMAX_DELAY);
-        USART1 -> TDR = ch;
-      }
-      else {
-        vTaskDelay(1);
-      }
-      vTaskDelay(1);
-
+  StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();
+  for (;;)
+  {
+    uint8_t ch = 2;
+    if (stream_buffer != NULL)
+    {
+      xStreamBufferReceive(stream_buffer, &ch, 1, portMAX_DELAY);
+      USART1->TDR = ch;
     }
+    else
+    {
+      vTaskDelay(1);
+    }
+    vTaskDelay(1);
+  }
 }
 void vTimermanagerTask(void *parameter)
 {
-    for (;;)
+  char str[20];
+  ConfigParam *Config = (ConfigParam *)(0x080E0000);
+  uint16_t liquid_level_refference = Config->liquid_level_refference;
+  uint8_t flag = Config->can_be_used;
+  for (;;)
+  {
+    if (flag == 1)
     {
-      // USART1 -> TDR =100;
-      vTaskDelay(1000);
+      sprintf(str, "LLR:%d\r\n", liquid_level_refference - get_liquid_value());
+      for (int i = 0; i <11; i++)
+      {
+        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        USART1->TDR = str[i];
+      }
     }
+    vTaskDelay(1000);
+  }
 }
 
 void vUARTUnpackTask(void *parameter)
 {
-    for (;;)
-    {
-      vTaskDelay(100);
-    }
+  for (;;)
+  {
+    vTaskDelay(100);
+  }
 }
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -138,18 +153,24 @@ int main(void)
   bsp_stream_buffer_init();
   LL_USART_EnableIT_RXNE_RXFNE(USART1);
   // xTaskCreate(&vtask1,"task1",128,NULL,1,NULL);
-  xTaskCreate(&vTimermanagerTask,"TMR",128,NULL,3,NULL);
-  xTaskCreate(&vCLITask,"CLI",512,NULL,2,NULL);
-  xTaskCreate(&vUARTUnpackTask,"UART",512,NULL,4,NULL);
+  bsp_base_param_init();
+  HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+  HAL_Delay(100);
+  HAL_ADC_Start(&hadc1);
+  xTaskCreate(&vTimermanagerTask, "TMR", 256, NULL, 2, NULL);
+  xTaskCreate(&vReadLiquidTask, "Liquid", 64, NULL, 2, NULL);
+  xTaskCreate(&vCLITask, "CLI", 512, NULL, 3, NULL);
+  xTaskCreate(&vUARTUnpackTask, "UART", 64, NULL, 4, NULL);
 
   vTaskStartScheduler();
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    // ConfigParam temp = bsp_get_param();
+    // printf("%d",temp.liquid_level_refference);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -158,28 +179,30 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Supply configuration update enable
-  */
+   */
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
-  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
+  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
+  {
+  }
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
+   * in the RCC_OscInitTypeDef structure.
+   */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48 | RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -198,10 +221,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
-                              |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
@@ -220,7 +241,7 @@ void SystemClock_Config(void)
 
 /* USER CODE END 4 */
 
- /* MPU Configuration */
+/* MPU Configuration */
 
 void MPU_Config(void)
 {
@@ -230,7 +251,7 @@ void MPU_Config(void)
   HAL_MPU_Disable();
 
   /** Initializes and configures the Region and the memory to be protected
-  */
+   */
   MPU_InitStruct.Enable = MPU_REGION_ENABLE;
   MPU_InitStruct.Number = MPU_REGION_NUMBER0;
   MPU_InitStruct.BaseAddress = 0x0;
@@ -246,23 +267,24 @@ void MPU_Config(void)
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
 }
 
 /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM17 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM17 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM17) {
+  if (htim->Instance == TIM17)
+  {
+    // USART1->TDR =49;
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
@@ -271,9 +293,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -285,14 +307,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

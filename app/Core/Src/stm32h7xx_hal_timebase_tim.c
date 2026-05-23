@@ -46,18 +46,18 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
   uint32_t              pFLatency;
 
   /*Configure the TIM17 IRQ priority */
-  if (TickPriority < (1UL << __NVIC_PRIO_BITS))
-   {
-     HAL_NVIC_SetPriority(TIM17_IRQn, TickPriority ,0);
-
+  // if (TickPriority < (1UL << __NVIC_PRIO_BITS))
+  //  {
+    //  HAL_NVIC_SetPriority(TIM17_IRQn, TickPriority ,0);
+    HAL_NVIC_SetPriority(TIM17_IRQn, 3 ,0);
      /* Enable the TIM17 global Interrupt */
      HAL_NVIC_EnableIRQ(TIM17_IRQn);
      uwTickPrio = TickPriority;
-    }
-  else
-  {
-    return HAL_ERROR;
-  }
+    // }
+  // else
+  // {
+  //   return HAL_ERROR;
+  // }
 
   /* Enable TIM17 clock */
   __HAL_RCC_TIM17_CLK_ENABLE();

@@ -12,7 +12,7 @@
 // #define configSYSTICK_CLOCK_HZ                                      480000000/8
 #define configTICK_RATE_HZ                                          1000
 #define configMAX_PRIORITIES                                        5
-#define configMINIMAL_STACK_SIZE                                    512
+#define configMINIMAL_STACK_SIZE                                    1024
 #define configMAX_TASK_NAME_LEN                                     16
 #define configUSE_16_BIT_TICKS                                      0
 #define configIDLE_SHOULD_YIELD                                     1
@@ -36,7 +36,7 @@
 /* Memory allocation related definitions. */
 #define configSUPPORT_STATIC_ALLOCATION                             0
 #define configSUPPORT_DYNAMIC_ALLOCATION                            1
-#define configTOTAL_HEAP_SIZE                                       10240
+#define configTOTAL_HEAP_SIZE                                       64*1024
 #define configAPPLICATION_ALLOCATED_HEAP                            0
 #define configSTACK_ALLOCATION_FROM_SEPARATE_HEAP                   0
 

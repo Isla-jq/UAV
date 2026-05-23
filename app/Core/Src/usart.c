@@ -101,16 +101,22 @@ void MX_USART1_UART_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
-#ifdef __GNUC__
-#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-#else
-#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
-#endif
-PUTCHAR_PROTOTYPE
+#include <unistd.h>
+#include <errno.h>
+
+int _write(int fd, char *ptr, int len)
 {
-    /* 等待发送寄存器空 */
-    while (!LL_USART_IsActiveFlag_TXE(USART1)) {}
-    LL_USART_TransmitData8(USART1, (uint8_t)ch);
-    return ch;
+    if (fd == STDOUT_FILENO || fd == STDERR_FILENO)
+    {
+        for (int i = 0; i < len; i++)
+        {
+            while (!LL_USART_IsActiveFlag_TXE(USART1));
+            LL_USART_TransmitData8(USART1, ptr[i]);
+        }
+        return len;
+    }
+
+    errno = EBADF;
+    return -1;
 }
 /* USER CODE END 1 */
