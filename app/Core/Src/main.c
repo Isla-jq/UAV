@@ -36,6 +36,7 @@
 #include "stdio.h"
 #include "bsp_liquid_read.h"
 #include "bsp_event_group_interface.h"
+#include "printf.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -103,6 +104,7 @@ void vSendSerialToNucTask(void *parameter)
       {
         int16_t value = liquid_level_refference - get_liquid_value();
         // snprintf(str, sizeof(str), "LLR:%d\r\n", value);
+        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
         USART1->TDR = 0x55;
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
         USART1->TDR = 0x01;
@@ -114,7 +116,7 @@ void vSendSerialToNucTask(void *parameter)
         USART1->TDR = '\r';
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
         USART1->TDR = '\n';
-        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+        while (!(USART1->ISR & USART_ISR_TC));
         // for (int i = 0; i < 11; i++)
         // {
         //   while (!(USART1->ISR & USART_ISR_TXE_TXFNF));

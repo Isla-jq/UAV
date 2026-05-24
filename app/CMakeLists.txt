@@ -62,11 +62,13 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+    Middlewares/Third_Party/printf/printf.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    Middlewares/Third_Party/printf/
 )
 
 # Add project symbols (macros)
@@ -77,13 +79,10 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 target_link_libraries(FreeRTOS_CLI PUBLIC
     freertos_kernel)
 
-target_link_libraries(stm32cubemx INTERFACE
-    bsp_lib
-    FreeRTOS_CLI)
-
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
     # Add user defined libraries
-    freertos_kernel
+    bsp_lib
+    FreeRTOS_CLI
 )

@@ -21,7 +21,7 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-#include <unistd.h> 
+#include "printf.h"
 /* USER CODE END 0 */
 
 /* USART1 init function */
@@ -101,22 +101,9 @@ void MX_USART1_UART_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
-#include <unistd.h>
-#include <errno.h>
-
-int _write(int fd, char *ptr, int len)
+void _putchar(char character)
 {
-    if (fd == STDOUT_FILENO || fd == STDERR_FILENO)
-    {
-        for (int i = 0; i < len; i++)
-        {
-            while (!LL_USART_IsActiveFlag_TXE(USART1));
-            LL_USART_TransmitData8(USART1, ptr[i]);
-        }
-        return len;
-    }
-
-    errno = EBADF;
-    return -1;
+  while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
+  USART1 ->TDR = character;
 }
 /* USER CODE END 1 */

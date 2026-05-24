@@ -1,3 +1,6 @@
 [submodule "app/Middlewares/Third_Party/FreeRTOS/FreeRTOS-Kernel"]
 	path = app/Middlewares/Third_Party/FreeRTOS/FreeRTOS-Kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+[submodule "app/Middlewares/Third_Party/printf"]
+	path = app/Middlewares/Third_Party/printf
+	url = https://github.com/mpaland/printf.git
