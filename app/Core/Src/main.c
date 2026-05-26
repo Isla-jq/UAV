@@ -102,7 +102,7 @@ void vSendSerialToNucTask(void *parameter)
     {
       if (flag == 1)
       {
-        int16_t value = liquid_level_refference - get_liquid_value();
+        int16_t value = get_liquid_value() - liquid_level_refference;
         // snprintf(str, sizeof(str), "LLR:%d\r\n", value);
         while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
         USART1->TDR = 0x55;
@@ -182,7 +182,7 @@ int main(void)
   xTaskCreate(&vSendSerialToNucTask, "TMR", 256, NULL, 2, NULL);
   xTaskCreate(&vReadLiquidTask, "Liquid", 64, NULL, 2, NULL);
   xTaskCreate(&vCLITask, "CLI", 512, NULL, 3, NULL);
-  xTaskCreate(&vUARTUnpackTask, "UART", 64, NULL, 4, NULL);
+  // xTaskCreate(&vUARTUnpackTask, "UART", 64, NULL, 4, NULL);
 
   vTaskStartScheduler();
   /* USER CODE END 2 */
