@@ -8,15 +8,19 @@ target_sources(bsp_source
     Src/bsp_event_group_interface.c
     Src/bsp_cli.c
     Src/bsp_base_param.c
-    Src/bsp_liquid_read.c)
+    Src/bsp_liquid_read.c
+    Src/bsp_uorb_task.cpp
+    )
 
 target_include_directories(bsp_include
     INTERFACE
     Inc
+    ${CMAKE_SOURCE_DIR}/Middlewares/Third_Party/uORB-freertos
 )
 
 target_link_libraries(bsp_lib
     INTERFACE
     bsp_source
     bsp_include
+    uorb
 )

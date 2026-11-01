@@ -37,6 +37,7 @@
 #include "bsp_liquid_read.h"
 #include "bsp_event_group_interface.h"
 #include "printf.h"
+#include "bsp_uorb_task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -182,6 +183,9 @@ int main(void)
   xTaskCreate(&vSendSerialToNucTask, "TMR", 256, NULL, 2, NULL);
   xTaskCreate(&vReadLiquidTask, "Liquid", 64, NULL, 2, NULL);
   xTaskCreate(&vCLITask, "CLI", 512, NULL, 3, NULL);
+  bsp_uorb_init();
+  xTaskCreate(&vUorbTask1, "Uorb1", 256, NULL, 3, NULL);
+  xTaskCreate(&vUorbTask2, "Uorb2", 256, NULL, 3, NULL);
   // xTaskCreate(&vUARTUnpackTask, "UART", 64, NULL, 4, NULL);
 
   vTaskStartScheduler();
