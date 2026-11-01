@@ -19,30 +19,27 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "fdcan.h"
 #include "memorymap.h"
+#include "tim.h"
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdint.h> 
 #include "FreeRTOS.h"
 #include "task.h"
-#include "stream_buffer.h"
-#include "bsp_stream_buffer_interface.h"
-#include "FreeRTOS_CLI.h"
-#include "bsp_cli.h"
 #include "bsp_base_param.h"
-#include "stdio.h"
-#include "bsp_liquid_read.h"
-#include "bsp_event_group_interface.h"
+#include "register_task.h"
 #include "printf.h"
-#include "bsp_uorb_task.h"
+#include "bsp_queue.h"
+#include "bsp_can_frame.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -58,7 +55,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+extern const task_item_t __tasks_start;
+extern const task_item_t __tasks_end;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,77 +68,27 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void vtask1(void *parameter)
+
+uint32_t ulGetRunTimeCounter(void)
 {
-  StreamBufferHandle_t stream_buffer = bsp_get_stream_buffer();
-  for (;;)
-  {
-    uint8_t ch = 2;
-    if (stream_buffer != NULL)
-    {
-      xStreamBufferReceive(stream_buffer, &ch, 1, portMAX_DELAY);
-      USART1->TDR = ch;
-    }
-    else
-    {
-      vTaskDelay(1);
-    }
-    vTaskDelay(1);
-  }
+    return (uint32_t)TIM2->CNT;
 }
-void vSendSerialToNucTask(void *parameter)
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
-  EventGroupHandle_t xEventGroup = bsp_get_event_group();
-  EventBits_t uxBits;
-  // char str[20];
-  ConfigParam *Config = (ConfigParam *)(CONFIG_FLASH_ADDE);
-  uint16_t liquid_level_refference = Config->liquid_level_refference;
-  uint8_t flag = Config->can_be_used;
-  for (;;)
+  while (1)
   {
-    uxBits = xEventGroupWaitBits(xEventGroup, UART_SEND_LIQUID, pdTRUE, pdFALSE, portMAX_DELAY);
-    if ((uxBits & UART_SEND_LIQUID) != 0)
-    {
-      if (flag == 1)
-      {
-        int16_t value = get_liquid_value() - liquid_level_refference;
-        // snprintf(str, sizeof(str), "LLR:%d\r\n", value);
-        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        USART1->TDR = 0x55;
-        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        USART1->TDR = 0x01;
-        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        USART1->TDR = (value>>8) & 0xff;
-        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        USART1->TDR = value&0xff;
-        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        USART1->TDR = '\r';
-        while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        USART1->TDR = '\n';
-        while (!(USART1->ISR & USART_ISR_TC));
-        // for (int i = 0; i < 11; i++)
-        // {
-        //   while (!(USART1->ISR & USART_ISR_TXE_TXFNF));
-        //   USART1->TDR = str[i];
-        // }
-      }
-    }
   }
 }
 
-void vUARTUnpackTask(void *parameter)
+void configureTimerForRunTimeStats(void)
 {
-  for (;;)
-  {
-    vTaskDelay(100);
-  }
 }
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
@@ -171,21 +119,41 @@ int main(void)
   MX_ADC1_Init();
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
+  MX_TIM2_Init();
+  MX_FDCAN1_Init();
   /* USER CODE BEGIN 2 */
   bsp_stream_buffer_init();
   bsp_event_group_init();
+
+  LL_TIM_EnableCounter(TIM2);
   LL_USART_EnableIT_RXNE_RXFNE(USART1);
+
   // xTaskCreate(&vtask1,"task1",128,NULL,1,NULL);
   bsp_base_param_init();
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
   HAL_Delay(100);
   HAL_ADC_Start(&hadc1);
-  xTaskCreate(&vSendSerialToNucTask, "TMR", 256, NULL, 2, NULL);
-  xTaskCreate(&vReadLiquidTask, "Liquid", 64, NULL, 2, NULL);
-  xTaskCreate(&vCLITask, "CLI", 512, NULL, 3, NULL);
-  bsp_uorb_init();
-  xTaskCreate(&vUorbTask1, "Uorb1", 256, NULL, 3, NULL);
-  xTaskCreate(&vUorbTask2, "Uorb2", 256, NULL, 3, NULL);
+
+  FDCAN_FilterTypeDef f = {0};
+  f.IdType       = FDCAN_STANDARD_ID;
+  f.FilterIndex  = 0;
+  f.FilterType   = FDCAN_FILTER_MASK;
+  f.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+  f.FilterID1    = 0x000;
+  f.FilterID2    = 0x000;
+  HAL_FDCAN_Init(&hfdcan1);
+  HAL_FDCAN_ConfigFilter(&hfdcan1, &f);
+  HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
+  HAL_FDCAN_Start(&hfdcan1);
+
+  queue_create_all();
+  for (const task_item_t *task = &__tasks_start; task < &__tasks_end; ++task)
+  {
+    xTaskCreate(task->func_, task->name_, task->stack_size_, NULL, task->priority_, NULL);
+  }
+  // xTaskCreate(&vReadLiquidTask, "Liquid", 128, NULL, 2, NULL);
+  // xTaskCreate(&vCLITask, "CLI", 330, NULL, 3, NULL);
+  // xTaskCreate(&vGetAllStacksTask, "GetAllStacks", 512, NULL, 3, NULL);
   // xTaskCreate(&vUARTUnpackTask, "UART", 64, NULL, 4, NULL);
 
   vTaskStartScheduler();
@@ -205,30 +173,28 @@ int main(void)
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Supply configuration update enable
-   */
+  */
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
 
   /** Configure the main internal regulator output voltage
-   */
+  */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
-  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
-  {
-  }
+  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48 | RCC_OSCILLATORTYPE_HSE;
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -247,8 +213,10 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
+                              |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
@@ -264,10 +232,29 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
+{
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
+        FDCAN_RxHeaderTypeDef rx;
+        uint8_t buf[8];
+        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0) > 0) {
+          HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx, buf);
+          can_receive_frame frame;
+          frame.can_head = rx;
+          memcpy(frame.data,buf,sizeof(frame.data));
+          QueueHandle_t can_queue = queue_get_handle("can_rx");
+          xQueueSendFromISR(can_queue, &frame, &xHigherPriorityTaskWoken);
+          // printf("%x",rx.Identifier);
+          // printf("%d",frame.data[0]);
+        }
+        HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
+      }
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
 /* USER CODE END 4 */
 
-/* MPU Configuration */
+ /* MPU Configuration */
 
 void MPU_Config(void)
 {
@@ -277,7 +264,7 @@ void MPU_Config(void)
   HAL_MPU_Disable();
 
   /** Initializes and configures the Region and the memory to be protected
-   */
+  */
   MPU_InitStruct.Enable = MPU_REGION_ENABLE;
   MPU_InitStruct.Number = MPU_REGION_NUMBER0;
   MPU_InitStruct.BaseAddress = 0x0;
@@ -293,24 +280,23 @@ void MPU_Config(void)
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+
 }
 
 /**
- * @brief  Period elapsed callback in non blocking mode
- * @note   This function is called  when TIM17 interrupt took place, inside
- * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
- * a global variable "uwTick" used as application time base.
- * @param  htim : TIM handle
- * @retval None
- */
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM17 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM17)
-  {
-    // USART1->TDR =49;
+  if (htim->Instance == TIM17) {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
@@ -319,9 +305,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -333,14 +319,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

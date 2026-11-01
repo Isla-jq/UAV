@@ -38,13 +38,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -u _printf_float")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -u _printf_float")
+
 # Enable CMake support for ASM and C languages
-enable_language(C ASM CXX)
+enable_language(C ASM)
 
 add_subdirectory(Middlewares/Third_Party/FreeRTOS/FreeRTOS-Kernel)
 add_subdirectory(bsp)
 add_subdirectory(Middlewares/Third_Party/FreeRTOS/FreeRTOS-Plus/Source/FreeRTOS-Plus-CLI)
-add_subdirectory(Middlewares/Third_Party/uORB-freertos)
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
@@ -84,7 +84,6 @@ target_link_libraries(FreeRTOS_CLI PUBLIC
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
     # Add user defined libraries
-    bsp_lib
+    bsp_libs
     FreeRTOS_CLI
-    uorb
 )

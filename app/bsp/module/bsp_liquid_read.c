@@ -1,7 +1,8 @@
+#include "main.h"
 #include "adc.h"
-#include "bsp_liquid_read.h"
 #include "bsp_base_param.h"
 #include "bsp_event_group_interface.h"
+#include "register_task.h"
 
 static uint16_t liquid_value = 0;
 
@@ -18,7 +19,7 @@ void vReadLiquidTask(void *parameter)
             liquid_value = HAL_ADC_GetValue(&hadc1);
         }
         xEventGroupSetBits(xEventGroup, UART_SEND_LIQUID);
-        HAL_Delay(1000);
+        vTaskDelay(1000);
     }
 }
 
@@ -26,3 +27,5 @@ uint16_t get_liquid_value()
 {
     return liquid_value;
 }
+
+RTOS_TASK_REGISTER("ReadLiquid", vReadLiquidTask, 128, 2);

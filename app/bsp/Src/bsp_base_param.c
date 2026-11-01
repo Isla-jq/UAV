@@ -7,19 +7,27 @@ ConfigParam * const config_param = (ConfigParam *)(CONFIG_FLASH_ADDE);
 
 void bsp_base_param_init(void)
 {
-    if (config_temp_param.can_be_used != 1) {
-        return -1;
+    if (config_param->can_be_used != 1) {
+        config_temp_param.can_be_used = 0;
+        config_temp_param.liquid_level_base = 0;
+        config_temp_param.liquid_level_max = 4095; // Default max for 12-bit ADC
+        return;
     }
     config_temp_param.can_be_used = config_param->can_be_used;
-    config_temp_param.liquid_level_refference = config_param->liquid_level_refference;
-    return 0;
+    config_temp_param.liquid_level_base = config_param->liquid_level_base;
+    config_temp_param.liquid_level_max = config_param->liquid_level_max;
 }
 
-void bsp_set_liquid_level_refference(uint16_t liquid_level_refference)
+void bsp_set_liquid_level_base(uint16_t liquid_level_base)
 {
     config_temp_param.can_be_used = 1;
-    config_temp_param.liquid_level_refference = liquid_level_refference;
-    return 0;
+    config_temp_param.liquid_level_base = liquid_level_base;
+}
+
+void bsp_set_liquid_level_max(uint16_t liquid_level_max)
+{
+    config_temp_param.can_be_used = 1;
+    config_temp_param.liquid_level_max = liquid_level_max;
 }
 
 void bsp_saveconfig(void)

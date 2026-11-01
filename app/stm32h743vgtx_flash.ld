@@ -98,6 +98,15 @@ SECTIONS
     _etext = .;        /* define a global symbols at end of code */
   } >FLASH
 
+.rtos_section :
+  {
+    . = ALIGN(8);
+    __tasks_start = .;
+    KEEP(*(.rtos_section))
+    __tasks_end = .;
+    . = ALIGN(8);
+  } > FLASH
+
   /* Constant data goes into FLASH */
   .rodata :
   {

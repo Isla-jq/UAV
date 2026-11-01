@@ -61,6 +61,7 @@
 
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+extern FDCAN_HandleTypeDef hfdcan1;
 extern TIM_HandleTypeDef htim17;
 
 /* USER CODE BEGIN EV */
@@ -148,14 +149,15 @@ void UsageFault_Handler(void)
 /**
   * @brief This function handles System service call via SWI instruction.
   */
-// void SVC_Handler(void)
-// {
-//   /* USER CODE BEGIN SVCall_IRQn 0 */
-//   /* USER CODE END SVCall_IRQn 0 */
-//   /* USER CODE BEGIN SVCall_IRQn 1 */
+void SVC_Handler(void)
+{
+  /* USER CODE BEGIN SVCall_IRQn 0 */
+  vPortSVCHandler();
+  /* USER CODE END SVCall_IRQn 0 */
+  /* USER CODE BEGIN SVCall_IRQn 1 */
 
-//   /* USER CODE END SVCall_IRQn 1 */
-// }
+  /* USER CODE END SVCall_IRQn 1 */
+}
 
 /**
   * @brief This function handles Debug monitor.
@@ -163,7 +165,7 @@ void UsageFault_Handler(void)
 void DebugMon_Handler(void)
 {
   /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
+#if 0 
   /* USER CODE END DebugMonitor_IRQn 0 */
   /* USER CODE BEGIN DebugMonitor_IRQn 1 */
 
@@ -173,14 +175,15 @@ void DebugMon_Handler(void)
 /**
   * @brief This function handles Pendable request for system service.
   */
-// void PendSV_Handler(void)
-// {
-//   /* USER CODE BEGIN PendSV_IRQn 0 */
-//   /* USER CODE END PendSV_IRQn 0 */
-//   /* USER CODE BEGIN PendSV_IRQn 1 */
+void PendSV_Handler(void)
+{
+  /* USER CODE BEGIN PendSV_IRQn 0 */
+#endif
+  /* USER CODE END PendSV_IRQn 0 */
+  /* USER CODE BEGIN PendSV_IRQn 1 */
 
-//   /* USER CODE END PendSV_IRQn 1 */
-// }
+  /* USER CODE END PendSV_IRQn 1 */
+}
 
 /**
   * @brief This function handles System tick timer.
@@ -189,7 +192,6 @@ void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
   xPortSysTickHandler();
-
   /* USER CODE END SysTick_IRQn 0 */
 
   /* USER CODE BEGIN SysTick_IRQn 1 */
@@ -203,6 +205,20 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32h7xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles FDCAN1 interrupt 0.
+  */
+void FDCAN1_IT0_IRQHandler(void)
+{
+  /* USER CODE BEGIN FDCAN1_IT0_IRQn 0 */
+
+  /* USER CODE END FDCAN1_IT0_IRQn 0 */
+  HAL_FDCAN_IRQHandler(&hfdcan1);
+  /* USER CODE BEGIN FDCAN1_IT0_IRQn 1 */
+
+  /* USER CODE END FDCAN1_IT0_IRQn 1 */
+}
 
 /**
   * @brief This function handles USART1 global interrupt.
@@ -261,7 +277,6 @@ void TIM17_IRQHandler(void)
   /* USER CODE END TIM17_IRQn 0 */
   HAL_TIM_IRQHandler(&htim17);
   /* USER CODE BEGIN TIM17_IRQn 1 */
-
   /* USER CODE END TIM17_IRQn 1 */
 }
 

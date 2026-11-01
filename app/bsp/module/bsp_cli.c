@@ -1,11 +1,12 @@
-#include "bsp_cli.h"
 #include "bsp_stream_buffer_interface.h"
 #include "main.h"
 #include "usbd_cdc_if.h"
 #include "task.h"
 #include "bsp_base_param.h"
 #include "bsp_liquid_read.h"
-
+#include "register_task.h"
+#include "FreeRTOS.h"
+#include "FreeRTOS_CLI.h"
 // static void LL_USART_SendString(USART_TypeDef *USARTx, uint8_t *str, int16_t len)
 // {
 //     for (int16_t i = 0; i < len; i++)
@@ -27,7 +28,7 @@ static void FreeRTOS_write(char *data, int16_t len)
 }
 
 #define MAX_INPUT_LENGTH 50
-#define MAX_OUTPUT_LENGTH 100
+#define MAX_OUTPUT_LENGTH 200
 
 // del cmd
 static BaseType_t prvDelCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
@@ -37,7 +38,7 @@ static BaseType_t prvDelCommand( char *pcWriteBuffer, size_t xWriteBufferLen, co
 
     pcFileName = FreeRTOS_CLIGetParameter(
                         pcCommandString,
-                        1,
+                        0,
                         &xParameterStringLength );
     snprintf( pcWriteBuffer, xWriteBufferLen,
               "Deleting file: %s\r\n", pcFileName );
@@ -47,7 +48,7 @@ static BaseType_t prvDelCommand( char *pcWriteBuffer, size_t xWriteBufferLen, co
 static const CLI_Command_Definition_t xDelCommand =
 {
     "del",
-    "del <filename>: This cmd is test. It is useless\n",
+    "del <filename>: This cmd is test. It is useless\r\n",
     prvDelCommand,
     1
 };
@@ -59,7 +60,7 @@ static BaseType_t prvSaveConfigCommand( char *pcWriteBuffer, size_t xWriteBuffer
 
     pcFileName = FreeRTOS_CLIGetParameter(
                         pcCommandString,
-                        1,
+                        0,
                         &xParameterStringLength );
     bsp_saveconfig();
     snprintf( pcWriteBuffer, xWriteBufferLen,
@@ -70,13 +71,63 @@ static BaseType_t prvSaveConfigCommand( char *pcWriteBuffer, size_t xWriteBuffer
 static const CLI_Command_Definition_t xSaveConfigCommand =
 {
     "saveconfig",
-    "saveconfig: Saves the configuration, such as \"liquid level reference\"\n",
+    "saveconfig: Saves the configuration, such as \"liquid level reference\"\r\n",
     prvSaveConfigCommand,
     1
 };
 
-// set liquid level reference
-static BaseType_t prvSetLiquidLvRef( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
+// set liquid level base
+static BaseType_t prvSetLiquidLvBase( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
+{
+    const char *pcFileName;
+    BaseType_t xParameterStringLength;
+
+    pcFileName = FreeRTOS_CLIGetParameter(
+                        pcCommandString,
+                        0,
+                        &xParameterStringLength );
+    uint16_t liquid_value = get_liquid_value();
+    bsp_set_liquid_level_base(liquid_value);
+    snprintf( pcWriteBuffer, xWriteBufferLen,
+              "prvSetLiquidLvBase is : %d\r\n", liquid_value );
+    return pdFALSE;
+}
+
+static const CLI_Command_Definition_t xSetLiquidLvBaseCommand =
+{
+    "setlbase",
+    "setlbase: set current liquid level as base reference\r\n",
+    prvSetLiquidLvBase,
+    1
+};
+
+// set liquid level max
+static BaseType_t prvSetLiquidLvMAX( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
+{
+    const char *pcFileName;
+    BaseType_t xParameterStringLength;
+
+    pcFileName = FreeRTOS_CLIGetParameter(
+                        pcCommandString,
+                        0,
+                        &xParameterStringLength );
+    uint16_t liquid_value = get_liquid_value();
+    bsp_set_liquid_level_max(liquid_value);
+    snprintf( pcWriteBuffer, xWriteBufferLen,
+              "prvSetLiquidLvMAX is : %d\r\n", liquid_value );
+    return pdFALSE;
+}
+
+static const CLI_Command_Definition_t xSetLiquidLvMAXCommand =
+{
+    "setlmax",
+    "setlmax: set maximum liquid level as reference, Note: you should uplift the sensor from the cisterm and input this cmd\r\n",
+    prvSetLiquidLvMAX,
+    1
+};
+
+// get system health status
+static BaseType_t prvGetSystemHealthStatus( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
 {
     const char *pcFileName;
     BaseType_t xParameterStringLength;
@@ -85,23 +136,46 @@ static BaseType_t prvSetLiquidLvRef( char *pcWriteBuffer, size_t xWriteBufferLen
                         pcCommandString,
                         1,
                         &xParameterStringLength );
-    uint16_t liquid_value = get_liquid_value();
-    bsp_set_liquid_level_refference(liquid_value);
-    snprintf( pcWriteBuffer, xWriteBufferLen,
-              "prvSetLiquidLvRef is : %d\r\n", liquid_value );
+    vTaskGetRunTimeStatistics(pcWriteBuffer, sizeof(pcWriteBuffer));
+    // snprintf( pcWriteBuffer, xWriteBufferLen,
+    //           "Saving config %s to Flash: %x \r\n", pcFileName,CONFIG_FLASH_ADDE);
     return pdFALSE;
 }
 
-static const CLI_Command_Definition_t xSetLiquidLvRefCommand =
+static const CLI_Command_Definition_t xGetSystemHealthStatusCommand =
 {
-    "setlr",
-    "setlr: set current liquid level as reference, Note: you should uplift the sensor from the cisterm and input this cmd\n",
-    prvSetLiquidLvRef,
+    "getsyshealth",
+    "getsyshealth: Gets the system health status\r\n",
+    prvGetSystemHealthStatus,
+    1
+};
+
+// get system remain stack
+static BaseType_t prvGetSystemRemainStack( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
+{
+    const char *pcFileName;
+    BaseType_t xParameterStringLength;
+
+    pcFileName = FreeRTOS_CLIGetParameter(
+                        pcCommandString,
+                        0,
+                        &xParameterStringLength );
+    vTaskList(pcWriteBuffer);
+    // snprintf( pcWriteBuffer, xWriteBufferLen,
+    //           "Saving config %s to Flash: %x \r\n", pcFileName,CONFIG_FLASH_ADDE);
+    return pdFALSE;
+}
+
+static const CLI_Command_Definition_t xGetSystemRemainStackCommand =
+{
+    "getsysstack",
+    "getsysstack: Gets the system remain stack\r\n",
+    prvGetSystemRemainStack,
     1
 };
 
 static const int8_t *const pcWelcomeMessage =
-    "FreeRTOS command server.rnType Help to view a list of registered commands.rn";
+    "FreeRTOS command server.rnType Help to view a list of registered commands\r\n";
 
 void vCLITask(void *pvParameters)
 {
@@ -114,8 +188,10 @@ void vCLITask(void *pvParameters)
     /* Send a welcome message to the user knows they are connected. */
     FreeRTOS_CLIRegisterCommand( &xDelCommand );
     FreeRTOS_CLIRegisterCommand( &xSaveConfigCommand );
-    FreeRTOS_CLIRegisterCommand( &xSetLiquidLvRefCommand );
-
+    FreeRTOS_CLIRegisterCommand( &xSetLiquidLvBaseCommand );
+    FreeRTOS_CLIRegisterCommand( &xSetLiquidLvMAXCommand );
+    FreeRTOS_CLIRegisterCommand( &xGetSystemHealthStatusCommand );
+    FreeRTOS_CLIRegisterCommand( &xGetSystemRemainStackCommand );
     FreeRTOS_write(pcWelcomeMessage,strlen( pcWelcomeMessage));
 
     for (;;)
@@ -192,3 +268,5 @@ void vCLITask(void *pvParameters)
         }
     }
 }
+
+RTOS_TASK_REGISTER("CLITask",vCLITask, 330, 3);

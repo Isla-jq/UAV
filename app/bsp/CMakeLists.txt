@@ -1,26 +1,20 @@
 add_library(bsp_source INTERFACE)
 add_library(bsp_include INTERFACE)
-add_library(bsp_lib INTERFACE)
+add_library(bsp_libs INTERFACE)
 
-target_sources(bsp_source
-    INTERFACE
-    Src/bsp_stream_buffer_interface.c
-    Src/bsp_event_group_interface.c
-    Src/bsp_cli.c
-    Src/bsp_base_param.c
-    Src/bsp_liquid_read.c
-    Src/bsp_uorb_task.cpp
-    )
+file(GLOB BSP_SOURCES_FILE CONFIGURE_DEPENDS Src/*.c)
+file(GLOB MODULE_SOURCES_FILE CONFIGURE_DEPENDS module/*.c)
+target_sources(bsp_source INTERFACE 
+    ${BSP_SOURCES_FILE}
+    ${MODULE_SOURCES_FILE})
 
 target_include_directories(bsp_include
     INTERFACE
     Inc
-    ${CMAKE_SOURCE_DIR}/Middlewares/Third_Party/uORB-freertos
 )
 
-target_link_libraries(bsp_lib
+target_link_libraries(bsp_libs
     INTERFACE
     bsp_source
     bsp_include
-    uorb
 )
